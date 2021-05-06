@@ -16,6 +16,7 @@ package prometheus
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
 	"strings"
 	"testing"
@@ -411,6 +412,39 @@ func TestListenLocal(t *testing.T) {
 
 	if len(sset.Spec.Template.Spec.Containers[0].Ports) != 0 {
 		t.Fatal("Prometheus container should have 0 ports defined")
+	}
+}
+
+func TestListenTLS(t *testing.T) {
+	sset, err := makeStatefulSet("test", monitoringv1.Prometheus{
+		Spec: monitoringv1.PrometheusSpec{
+			Web: &monitoringv1.WebSpec{
+				TLSConfig: &monitoringv1.WebTLSConfig{
+					KeySecret: v1.SecretKeySelector{},
+					Cert:      monitoringv1.SecretOrConfigMap{},
+				},
+			},
+		},
+	}, defaultTestConfig, nil, "", 0)
+	if err != nil {
+		t.Fatalf("Unexpected error while making StatefulSet: %v", err)
+	}
+
+	actualReadinessProbe := sset.Spec.Template.Spec.Containers[0].ReadinessProbe
+	expectedReadinessProbe := &v1.Probe{
+		Handler: v1.Handler{
+			HTTPGet: &v1.HTTPGetAction{
+				Path:   "/-/ready",
+				Port:   intstr.FromString("web"),
+				Scheme: "HTTPS",
+			},
+		},
+		TimeoutSeconds:   3,
+		PeriodSeconds:    5,
+		FailureThreshold: 120,
+	}
+	if !reflect.DeepEqual(actualReadinessProbe, expectedReadinessProbe) {
+		t.Fatalf("Readiness probe doesn't match expected. \n\nExpected: %+v\n\nGot: %+v", expectedReadinessProbe, actualReadinessProbe)
 	}
 }
 

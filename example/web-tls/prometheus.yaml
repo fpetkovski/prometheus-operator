@@ -1,0 +1,26 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: main
+  labels:
+    prometheus: main
+spec:
+  replicas: 2
+  serviceMonitorSelector:
+    matchExpressions:
+    - {key: app, operator: In, values: [node-exporter, example-app]}
+  web:
+    pageTitle: Hello from Prometheus
+    tlsConfig:
+      cert:
+        secret:
+          name: web-tls
+          key: tls.crt
+      keySecret:
+        name: web-tls
+        key: tls.key
+      minVersion: TLS11
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256

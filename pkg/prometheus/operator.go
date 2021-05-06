@@ -19,6 +19,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"github.com/prometheus-operator/prometheus-operator/pkg/web_config"
 	"reflect"
 	"regexp"
 	"strings"
@@ -1237,6 +1238,10 @@ func (c *Operator) sync(ctx context.Context, key string) error {
 		return errors.Wrap(err, "creating tls asset secret failed")
 	}
 
+	if err := c.createOrUpdateWebConfigSecret(ctx, p); err != nil {
+		return errors.Wrap(err, "synchronizing web config secret failed")
+	}
+
 	// Create governing service if it doesn't exist.
 	svcClient := c.kclient.CoreV1().Services(p.Namespace)
 	if err := k8sutil.CreateOrUpdateService(ctx, svcClient, makeStatefulSetService(p, c.config)); err != nil {
@@ -1626,6 +1631,49 @@ func (c *Operator) createOrUpdateTLSAssetSecret(ctx context.Context, p *monitori
 	}
 
 	return nil
+}
+
+func (c *Operator) createOrUpdateWebConfigSecret(ctx context.Context, p *monitoringv1.Prometheus) error {
+	boolTrue := true
+	client := c.kclient.CoreV1().Secrets(p.Namespace)
+
+	var tlsConfig *monitoringv1.WebTLSConfig
+	if p.Spec.Web != nil {
+		tlsConfig = p.Spec.Web.TLSConfig
+	}
+
+	webConfig := web_config.NewConfig(WebConfigSecretName(p.Name))
+	data, err := webConfig.GenerateConfigFileContents(webConfigDir, tlsConfig)
+	if err != nil {
+		return err
+	}
+
+	webConfigConfigmap := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   WebConfigSecretName(p.Name),
+			Labels: c.config.Labels.Merge(managedByOperatorLabels),
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         p.APIVersion,
+					BlockOwnerDeletion: &boolTrue,
+					Controller:         &boolTrue,
+					Kind:               p.Kind,
+					Name:               p.Name,
+					UID:                p.UID,
+				},
+			},
+		},
+		Data: map[string][]byte{
+			"web-config.yaml": data,
+		},
+	}
+
+	err = k8sutil.CreateOrUpdateSecret(ctx, client, webConfigConfigmap)
+	if err != nil {
+		return errors.Wrap(err, "failed to create web config for Prometheus")
+	}
+
+	return err
 }
 
 func (c *Operator) selectServiceMonitors(ctx context.Context, p *monitoringv1.Prometheus, store *assets.Store) (map[string]*monitoringv1.ServiceMonitor, error) {

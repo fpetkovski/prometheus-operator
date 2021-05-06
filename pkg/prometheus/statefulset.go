@@ -16,6 +16,7 @@ package prometheus
 
 import (
 	"fmt"
+	"github.com/prometheus-operator/prometheus-operator/pkg/web_config"
 	"net/url"
 	"path"
 	"strings"
@@ -40,12 +41,14 @@ const (
 	storageDir                      = "/prometheus"
 	confDir                         = "/etc/prometheus/config"
 	confOutDir                      = "/etc/prometheus/config_out"
+	webConfigDir					= "/etc/prometheus/web_config"
 	tlsAssetsDir                    = "/etc/prometheus/certs"
 	rulesDir                        = "/etc/prometheus/rules"
 	secretsDir                      = "/etc/prometheus/secrets/"
 	configmapsDir                   = "/etc/prometheus/configmaps/"
 	configFilename                  = "prometheus.yaml.gz"
 	configEnvsubstFilename          = "prometheus.env.yaml"
+	webConfigFilename               = "web-tls-config.yaml"
 	sSetInputHashName               = "prometheus-operator-input-hash"
 	defaultPortName                 = "web"
 )
@@ -527,6 +530,25 @@ func makeStatefulSetSpec(p monitoringv1.Prometheus, c *operator.Config, shard in
 		})
 	}
 
+	// Mount web config and web TLS credentials
+	if p.Spec.Web != nil && p.Spec.Web.TLSConfig != nil {
+		tlsConfig := p.Spec.Web.TLSConfig
+
+		webTLSCreds := web_config.NewTLSCredentials(webConfigDir, tlsConfig.KeySecret, tlsConfig.Cert, tlsConfig.ClientCA)
+		webTLSVolumes, webTLSMounts := webTLSCreds.Mount()
+
+		webConfig := web_config.NewConfig(WebConfigSecretName(p.Name))
+		configArg, configVol, configMount := webConfig.Mount(path.Join(webConfigDir, webConfigFilename))
+
+		promArgs = append(promArgs, configArg)
+		volumes = append(volumes, configVol)
+		volumes = append(volumes, webTLSVolumes...)
+		promVolumeMounts = append(promVolumeMounts, configMount)
+		promVolumeMounts = append(promVolumeMounts, webTLSMounts...)
+	}
+
+	// Mount related secrets
+
 	for _, s := range p.Spec.Secrets {
 		volumes = append(volumes, v1.Volume{
 			Name: k8sutil.SanitizeVolumeName("secret-" + s),
@@ -575,11 +597,13 @@ func makeStatefulSetSpec(p monitoringv1.Prometheus, c *operator.Config, shard in
 					fmt.Sprintf(localProbe, localReadyPath, localReadyPath),
 				},
 			}
-
 		} else {
 			readinessProbeHandler.HTTPGet = &v1.HTTPGetAction{
 				Path: readyPath,
 				Port: intstr.FromString(p.Spec.PortName),
+			}
+			if p.Spec.Web != nil && p.Spec.Web.TLSConfig != nil {
+				readinessProbeHandler.HTTPGet.Scheme = v1.URISchemeHTTPS
 			}
 		}
 	}
@@ -779,6 +803,9 @@ func makeStatefulSetSpec(p monitoringv1.Prometheus, c *operator.Config, shard in
 			configReloaderArgs = append(configReloaderArgs, fmt.Sprintf("--watched-dir=%s", mountPath))
 		}
 	}
+	if p.Spec.Web != nil && p.Spec.Web.TLSConfig != nil {
+		configReloaderArgs = append(configReloaderArgs, fmt.Sprintf("--watched-dir=%s", webConfigDir))
+	}
 
 	operatorContainers := append([]v1.Container{
 		{
@@ -852,6 +879,10 @@ func configSecretName(name string) string {
 
 func tlsAssetsSecretName(name string) string {
 	return fmt.Sprintf("%s-tls-assets", prefixedName(name))
+}
+
+func WebConfigSecretName(name string) string {
+	return fmt.Sprintf("%s-web-config", prefixedName(name))
 }
 
 func volumeName(name string) string {

@@ -503,7 +503,40 @@ type QuerySpec struct {
 // +k8s:openapi-gen=true
 type WebSpec struct {
 	// The prometheus web page title
-	PageTitle *string `json:"pageTitle,omitempty"`
+	PageTitle *string       `json:"pageTitle,omitempty"`
+	TLSConfig *WebTLSConfig `json:"tlsConfig,omitempty"`
+}
+
+// WebTLSConfig defines the TLS parameters for HTTPS.
+// +k8s:openapi-gen=true
+type WebTLSConfig struct {
+	// Secret containing the TLS key for the server.
+	KeySecret v1.SecretKeySelector `json:"keySecret"`
+	// Contains the TLS certificate for the server.
+	Cert SecretOrConfigMap `json:"cert"`
+	// Server policy for client authentication. Maps to ClientAuth Policies.
+	// For more detail on clientAuth options:
+	// https://golang.org/pkg/crypto/tls/#ClientAuthType
+	ClientAuthType string `json:"clientAuthType,omitempty"`
+	// Contains the CA certificate for client certificate authentication to the server.
+	ClientCA SecretOrConfigMap `json:"client_ca,omitempty"`
+	// Minimum TLS version that is acceptable. Defaults to TLS12.
+	MinVersion string `json:"minVersion,omitempty"`
+	// Maximum TLS version that is acceptable. Defaults to TLS13.
+	MaxVersion string `json:"maxVersion,omitempty"`
+	// List of supported cipher suites for TLS versions up to TLS 1.2. If empty,
+	// Go default cipher suites are used. Available cipher suites are documented
+	// in the go documentation: https://golang.org/pkg/crypto/tls/#pkg-constants
+	CipherSuites []string `json:"cipherSuites,omitempty"`
+	// Controls whether the server selects the
+	// client's most preferred cipher suite, or the server's most preferred
+	// cipher suite. If true then the server's preference, as expressed in
+	// the order of elements in cipher_suites, is used.
+	PreferServerCipherSuites *bool `json:"preferServerCipherSuites,omitempty"`
+	// Elliptic curves that will be used in an ECDHE handshake, in preference
+	// order. Available curves are documented in the go documentation:
+	// https://golang.org/pkg/crypto/tls/#CurveID
+	CurvePreferences []string `json:"curvePreferences,omitempty"`
 }
 
 // ThanosSpec defines parameters for a Prometheus server within a Thanos deployment.
