@@ -261,7 +261,7 @@ func createK8sAppMonitoring(
 	sm.Spec.Endpoints = []monitoringv1.Endpoint{
 		{
 			Port:     "mtls",
-			Interval: "30s",
+			Interval: "5s",
 			Scheme:   "https",
 			TLSConfig: &monitoringv1.TLSConfig{
 				SafeTLSConfig: monitoringv1.SafeTLSConfig{
@@ -305,6 +305,7 @@ func createK8sAppMonitoring(
 }
 
 func testPromRemoteWriteWithTLS(t *testing.T) {
+	t.Parallel()
 	// can't extend the names since ns cannot be created with more than 63 characters
 	tests := []testFramework.PromRemoteWriteTestConfig{
 		// working configurations
