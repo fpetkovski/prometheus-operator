@@ -4870,7 +4870,6 @@
                     "type": "object"
                   },
                   "retention": {
-                    "description": "Time duration Prometheus shall retain data for. Default is '24h', and must match the regular expression `[0-9]+(ms|s|m|h|d|w|y)` (milliseconds seconds minutes hours days weeks years).",
                     "type": "string"
                   },
                   "retentionSize": {
@@ -4885,32 +4884,63 @@
                     "description": "Namespaces to be selected for PrometheusRules discovery. If unspecified, only the same namespace as the Prometheus object is in is used.",
                     "properties": {
                       "matchExpressions": {
-                        "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
-                        "items": {
-                          "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
-                          "properties": {
-                            "key": {
-                              "description": "key is the label key that the selector applies to.",
-                              "type": "string"
-                            },
-                            "operator": {
-                              "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
-                              "type": "string"
-                            },
-                            "values": {
-                              "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
-                              "items": {
-                                "type": "string"
+                        "allOf": [
+                          {
+                            "items": {
+                              "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+                              "properties": {
+                                "key": {
+                                  "description": "key is the label key that the selector applies to.",
+                                  "type": "string"
+                                },
+                                "operator": {
+                                  "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
+                                  "type": "string"
+                                },
+                                "values": {
+                                  "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "type": "array"
+                                }
                               },
-                              "type": "array"
+                              "required": [
+                                "key",
+                                "operator"
+                              ],
+                              "type": "object"
                             }
                           },
-                          "required": [
-                            "key",
-                            "operator"
-                          ],
-                          "type": "object"
-                        },
+                          {
+                            "items": {
+                              "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+                              "properties": {
+                                "key": {
+                                  "description": "key is the label key that the selector applies to.",
+                                  "type": "string"
+                                },
+                                "operator": {
+                                  "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
+                                  "type": "string"
+                                },
+                                "values": {
+                                  "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "key",
+                                "operator"
+                              ],
+                              "type": "object"
+                            }
+                          }
+                        ],
+                        "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
                         "type": "array"
                       },
                       "matchLabels": {
@@ -4927,32 +4957,63 @@
                     "description": "A selector to select which PrometheusRules to mount for loading alerting/recording rules from. Until (excluding) Prometheus Operator v0.24.0 Prometheus Operator will migrate any legacy rule ConfigMaps to PrometheusRule custom resources selected by RuleSelector. Make sure it does not match any config maps that you do not want to be migrated.",
                     "properties": {
                       "matchExpressions": {
-                        "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
-                        "items": {
-                          "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
-                          "properties": {
-                            "key": {
-                              "description": "key is the label key that the selector applies to.",
-                              "type": "string"
-                            },
-                            "operator": {
-                              "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
-                              "type": "string"
-                            },
-                            "values": {
-                              "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
-                              "items": {
-                                "type": "string"
+                        "allOf": [
+                          {
+                            "items": {
+                              "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+                              "properties": {
+                                "key": {
+                                  "description": "key is the label key that the selector applies to.",
+                                  "type": "string"
+                                },
+                                "operator": {
+                                  "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
+                                  "type": "string"
+                                },
+                                "values": {
+                                  "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "type": "array"
+                                }
                               },
-                              "type": "array"
+                              "required": [
+                                "key",
+                                "operator"
+                              ],
+                              "type": "object"
                             }
                           },
-                          "required": [
-                            "key",
-                            "operator"
-                          ],
-                          "type": "object"
-                        },
+                          {
+                            "items": {
+                              "description": "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
+                              "properties": {
+                                "key": {
+                                  "description": "key is the label key that the selector applies to.",
+                                  "type": "string"
+                                },
+                                "operator": {
+                                  "description": "operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.",
+                                  "type": "string"
+                                },
+                                "values": {
+                                  "description": "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "key",
+                                "operator"
+                              ],
+                              "type": "object"
+                            }
+                          }
+                        ],
+                        "description": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
                         "type": "array"
                       },
                       "matchLabels": {
